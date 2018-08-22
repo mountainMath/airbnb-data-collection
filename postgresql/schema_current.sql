@@ -101,6 +101,7 @@ CREATE TABLE public.room
   property_type character varying(255),
   currency character varying(20),
   rate_type character varying(20),
+  license character varying(255),
   CONSTRAINT room_pkey PRIMARY KEY (room_id, survey_id)
 )
 WITH (

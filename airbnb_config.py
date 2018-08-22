@@ -32,7 +32,7 @@ class ABConfig():
         self.FLAGS_PRINT = 9
         self.FLAGS_INSERT_REPLACE = True
         self.FLAGS_INSERT_NO_REPLACE = False
-        self.URL_ROOT = "https://www.airbnb.com/"
+        self.URL_ROOT = "https://www.airbnb.ca/"
         self.URL_ROOM_ROOT = self.URL_ROOT + "rooms/"
         self.URL_HOST_ROOT = self.URL_ROOT + "users/show/"
         # self.URL_API_SEARCH_ROOT = self.URL_ROOT + "search/search_results"

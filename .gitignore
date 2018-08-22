@@ -44,4 +44,5 @@ googlemaps.py
 /postgresql/test.sql
 /postgresql/shapefiles/*
 !docker/scripts/*.sh
-
+.idea/
+venv/

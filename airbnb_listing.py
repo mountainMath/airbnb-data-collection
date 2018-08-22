@@ -54,6 +54,7 @@ class ABListing():
         self.currency = None
         # rate_type (str) - "nightly" or other?
         self.rate_type = None
+        self.license = None
         """ """
         logger.setLevel(config.log_level)
 
@@ -146,8 +147,8 @@ class ABListing():
             logger.error("Operational error (connection closed): resuming")
             del(self.config.connection)
         except psycopg2.DatabaseError as de:
-            self.config.connection.conn.rollback()
-            logger.erro(psycopg2.errorcodes.lookup(de.pgcode[:2]))
+            self.config.connection.rollback()
+            logger.error(psycopg2.errorcodes.lookup(de.pgcode[:2]))
             logger.error("Database error: resuming")
             del(self.config.connection)
         except psycopg2.InterfaceError:
@@ -276,23 +277,24 @@ class ABListing():
                     accommodates, bedrooms, bathrooms, price, deleted,
                     minstay, latitude, longitude, survey_id,
                     coworker_hosted, extra_host_languages, name,
-                    property_type, currency, rate_type
-
+                    property_type, currency, rate_type, license
                 )
                 """
             sql += """
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s
+                values (%s, %s, %s, %s, %s, 
+                %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, %s, %s
                 )"""
             insert_args = (
-                self.room_id, self.host_id, self.room_type, self.country,
-                self.city, self.neighborhood, self.address, self.reviews,
-                self.overall_satisfaction, self.accommodates, self.bedrooms,
-                self.bathrooms, self.price, self.deleted, self.minstay,
-                self.latitude, self.longitude, self.survey_id,
+                self.room_id, self.host_id, self.room_type, self.country, self.city,
+                self.neighborhood, self.address, self.reviews, self.overall_satisfaction,
+                self.accommodates, self.bedrooms, self.bathrooms, self.price, self.deleted,
+                self.minstay, self.latitude, self.longitude, self.survey_id,
                 self.coworker_hosted, self.extra_host_languages, self.name,
-                self.property_type, self.currency, self.rate_type
+                self.property_type, self.currency, self.rate_type, self.license
                 )
             cur.execute(sql, insert_args)
             cur.close()
@@ -363,6 +365,29 @@ class ABListing():
                 )
             if len(temp) > 0:
                 self.country = temp[0]
+        except:
+            raise
+
+    def __get_license(self,tree):
+        try:
+            temp = tree.xpath('.//script[@data-hypernova-key="spaspabundlejs"]')
+            if len(temp) > 0:
+                text= temp[0].text[4:len(temp[0].text)-3]
+                json_item_data = json.loads(text)
+                item_data = json_item_data['bootstrapData']['reduxData']['homePDP']['listingInfo']['listing']
+                if item_data['license']:
+                    self.license=item_data['license'][:254]
+        except:
+            raise
+    def __get_min_nights(self,tree):
+        try:
+            temp = tree.xpath('.//script[@data-hypernova-key="spaspabundlejs"]')
+            if len(temp) > 0:
+                text= temp[0].text[4:len(temp[0].text)-3]
+                json_item_data = json.loads(text)
+                item_data = json_item_data['bootstrapData']['reduxData']['homePDP']['listingInfo']['listing']
+                if item_data['min_nights']:
+                    self.minstay=item_data['min_nights']
         except:
             raise
 
@@ -712,22 +737,24 @@ class ABListing():
             # warning.  Items coded in <meta
             # property="airbedandbreakfast:*> elements -- country --
 
-            self.__get_country(tree)
-            self.__get_city(tree)
-            self.__get_rating(tree)
-            self.__get_latitude(tree)
-            self.__get_longitude(tree)
-            self.__get_host_id(tree)
-            self.__get_room_type(tree)
-            self.__get_neighborhood(tree)
-            self.__get_address(tree)
-            self.__get_reviews(tree)
-            self.__get_accommodates(tree)
-            self.__get_bedrooms(tree)
-            self.__get_bathrooms(tree)
-            self.__get_minstay(tree)
-            self.__get_price(tree)
-            self.deleted = 0
+            # self.__get_country(tree)
+            # self.__get_city(tree)
+            # self.__get_rating(tree)
+            # self.__get_latitude(tree)
+            # self.__get_longitude(tree)
+            # self.__get_host_id(tree)
+            # self.__get_room_type(tree)
+            # self.__get_neighborhood(tree)
+            # self.__get_address(tree)
+            # self.__get_reviews(tree)
+            # self.__get_accommodates(tree)
+            # self.__get_bedrooms(tree)
+            # self.__get_bathrooms(tree)
+            #self.__get_minstay(tree)
+            # self.__get_price(tree)
+            # self.deleted = 0
+            self.__get_license(tree)
+            self.__get_min_nights(tree)
 
             # NOT FILLING HERE, but maybe should? have to write helper methods:
             # coworker_hosted, extra_host_languages, name,

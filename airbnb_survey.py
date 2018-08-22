@@ -46,6 +46,7 @@ class ABSurvey():
         self.search_area_name = None
         self.set_search_area()
         self.room_types = ["Private room", "Entire home/apt", "Shared room"]
+        self.visited_rooms=[]
 
         # Set up logging
         logger.setLevel(config.log_level)
@@ -169,6 +170,8 @@ class ABSurvey():
                     listing.extra_host_languages = ehl[:254]
                 else:
                     listing.extra_host_languages = ehl
+            elif "host_languages" in json_listing:
+                listing.extra_host_languages = ','.join(json_listing["host_languages"])[:254]
             else:
                 listing.extra_host_languages = None
             if "name" in json_listing:
@@ -185,13 +188,24 @@ class ABSurvey():
                     listing.property_type = pt[:254]
                 else:
                     listing.property_type = pt
+            elif "property_type_id" in json_listing:
+                listing.property_type = str(json_listing["property_type_id"])[:254]
+            elif "room_and_property_type" in json_listing:
+                listing.property_type = json_listing["room_and_property_type"][:254]
             else:
                 listing.property_type = None
+            if "city" in json_listing:
+                listing.city = json_listing["city"][:254]
+            if "neighborhood" in json_listing:
+                listing.neighborhood = json_listing["neighborhood"][:254]
+
             # pricing
             json_pricing = json["pricing_quote"]
             listing.price = json_pricing["rate"]["amount"] if "rate" in json_pricing else None
             listing.currency = json_pricing["rate"]["currency"] if "rate" in json_pricing else None
             listing.rate_type = json_pricing["rate_type"] if "rate_type" in json_pricing else None
+
+            listing.get_room_info_from_web_site(True)
 
             return listing
         except:
@@ -737,6 +751,10 @@ class ABSurveyByBoundingBox(ABSurvey):
                             room_id = int(json_listing["listing"]["id"])
                             if room_id is not None:
                                 room_count += 1
+                                if room_id in self.visited_rooms:
+                                    logger.info("Skipping room %s, already visited during this run.",room_id)
+                                    continue
+                                self.visited_rooms.append(room_id) # keep track of rooms we have already visited
                                 listing = self.listing_from_search_page_json(json_listing, room_id)
                                 if listing is None:
                                     continue

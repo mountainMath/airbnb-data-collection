@@ -147,6 +147,7 @@ CREATE TABLE room (
     longitude numeric(30,6),
     survey_id integer DEFAULT 999999 NOT NULL,
     location geometry
+    license character varying(255)
 );
 
 
