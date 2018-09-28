@@ -10,6 +10,8 @@ from lxml import html
 import psycopg2
 import json
 import airbnb_ws
+from pathlib import Path
+import os
 
 logger = logging.getLogger()
 
@@ -239,21 +241,34 @@ class ABListing():
     def get_room_info_from_web_site(self, flag):
         """ Get the room properties from the web site """
         try:
-            # initialization
-            logger.info("-" * 70)
-            logger.info("Room " + str(self.room_id) +
-                        ": getting from Airbnb web site")
-            room_url = self.config.URL_ROOM_ROOT + str(self.room_id)
-            response = airbnb_ws.ws_request_with_repeats(self.config, room_url)
-            if response is not None:
-                page = response.text
+            # first check if we have a cached local version
+            base_path=self.config.CACHE_PATH+"/"+str(self.config.SURVEY_ID)
+            file = Path(base_path+"/"+str(self.room_id)+".html")
+            page = None
+            if self.config.USE_CACHE and file.exists():
+                page = file.read_text()
+            else:
+                # initialization
+                logger.info("-" * 70)
+                logger.info("Room " + str(self.room_id) +
+                            ": getting from Airbnb web site")
+                room_url = self.config.URL_ROOM_ROOT + str(self.room_id)
+                response = airbnb_ws.ws_request_with_repeats(self.config, room_url)
+                if response is not None:
+                    page = response.text
+                    if self.config.USE_CACHE:
+                        if not Path(base_path).exists():
+                            os.makedirs(base_path)
+                        file.write_text(page)
+                else:
+                    logger.info("Room %s: not found", self.room_id)
+                    return False
+            if page:
                 tree = html.fromstring(page)
                 self.__get_room_info_from_tree(tree, flag)
                 logger.info("Room %s: found", self.room_id)
                 return True
-            else:
-                logger.info("Room %s: not found", self.room_id)
-                return False
+
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception as ex:
@@ -368,28 +383,13 @@ class ABListing():
         except:
             raise
 
-    def __get_license(self,tree):
-        try:
-            temp = tree.xpath('.//script[@data-hypernova-key="spaspabundlejs"]')
-            if len(temp) > 0:
-                text= temp[0].text[4:len(temp[0].text)-3]
-                json_item_data = json.loads(text)
-                item_data = json_item_data['bootstrapData']['reduxData']['homePDP']['listingInfo']['listing']
-                if item_data['license']:
-                    self.license=item_data['license'][:254]
-        except:
-            raise
-    def __get_min_nights(self,tree):
-        try:
-            temp = tree.xpath('.//script[@data-hypernova-key="spaspabundlejs"]')
-            if len(temp) > 0:
-                text= temp[0].text[4:len(temp[0].text)-3]
-                json_item_data = json.loads(text)
-                item_data = json_item_data['bootstrapData']['reduxData']['homePDP']['listingInfo']['listing']
-                if item_data['min_nights']:
-                    self.minstay=item_data['min_nights']
-        except:
-            raise
+    def __get_license(self,item_data):
+        if item_data and item_data['license']:
+            self.license=item_data['license'][:254]
+
+    def __get_min_nights(self,item_data):
+        if item_data and item_data['min_nights']:
+            self.minstay=item_data['min_nights']
 
     def __get_city(self, tree):
         try:
@@ -753,8 +753,17 @@ class ABListing():
             #self.__get_minstay(tree)
             # self.__get_price(tree)
             # self.deleted = 0
-            self.__get_license(tree)
-            self.__get_min_nights(tree)
+
+            try:
+                temp = tree.xpath('.//script[@data-hypernova-key="spaspabundlejs"]')
+                text = temp[0].text[4:len(temp[0].text) - 3]
+                json_item_data = json.loads(text)
+                listing_json = json_item_data['bootstrapData']['reduxData']['homePDP']['listingInfo']['listing']
+            except:
+                listing_json=None
+            if (listing_json):
+                self.__get_license(listing_json)
+                self.__get_min_nights(listing_json)
 
             # NOT FILLING HERE, but maybe should? have to write helper methods:
             # coworker_hosted, extra_host_languages, name,

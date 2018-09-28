@@ -50,6 +50,9 @@ class ABConfig():
         self.HTTP_PROXY_LIST_COMPLETE = []
         self.GOOGLE_API_KEY = None
 
+        self.SUCCESSFUL_CONSECUTIVE_ATTEMPTS=0
+        self.CACHE_PATH = "/Users/jens/.cache_data/airbnb"
+
         try:
             config = configparser.ConfigParser()
 
@@ -101,6 +104,7 @@ class ABConfig():
             self.MAX_CONNECTION_ATTEMPTS = \
                 int(config["NETWORK"]["max_connection_attempts"])
             self.REQUEST_SLEEP = float(config["NETWORK"]["request_sleep"])
+            self.INITIAL_REQUEST_SLEEP = self.REQUEST_SLEEP
             self.HTTP_TIMEOUT = float(config["NETWORK"]["http_timeout"])
             try:
                 self.URL_API_SEARCH_ROOT = config["NETWORK"]["url_api_search_root"]
@@ -123,6 +127,10 @@ class ABConfig():
                 logger.warning("For more information, see example.config")
                 self.CLIENT_SESSION_ID = None
 
+            try:
+                self.USE_CACHE=config["NETWORK"]["use_cache"]
+            except:
+                self.USE_CACHE=False
             # survey
             self.FILL_MAX_ROOM_COUNT = int(config["SURVEY"]["fill_max_room_count"])
             self.ROOM_ID_UPPER_BOUND = int(config["SURVEY"]["room_id_upper_bound"])

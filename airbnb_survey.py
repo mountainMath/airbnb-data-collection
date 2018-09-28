@@ -42,6 +42,7 @@ class ABSurvey():
     def __init__(self, config, survey_id):
         self.config = config
         self.survey_id = survey_id
+        self.config.SURVEY_ID=survey_id
         self.search_area_id = None
         self.search_area_name = None
         self.set_search_area()
@@ -798,7 +799,7 @@ class ABSurveyByBoundingBox(ABSurvey):
             else:
                 median_leaf = median_node[-1]
             # calculate medians
-            if room_count > 0:
+            if room_count > 0 and median_lists != {'latitude': [], 'longitude': []}:
                 median_lat = round(sorted(median_lists["latitude"])
                                    [int(len(median_lists["latitude"])/2)], 5
                                   )

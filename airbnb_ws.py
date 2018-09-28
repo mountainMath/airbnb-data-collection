@@ -82,6 +82,11 @@ def ws_individual_request(config, url, attempt_id, params=None):
         response = requests.get(url, params, timeout=timeout,
                                 headers=headers, cookies=cookies, proxies=proxies)
         if response.status_code < 300:
+            # step down wait times if things have been going well for a while
+            if config.SUCCESSFUL_CONSECUTIVE_ATTEMPTS>50 and (config.REQUEST_SLEEP-config.INITIAL_REQUEST_SLEEP)>=1:
+                config.REQUEST_SLEEP -= 1.0
+                config.SUCCESSFUL_CONSECUTIVE_ATTEMPTS=0
+            config.SUCCESSFUL_CONSECUTIVE_ATTEMPTS += 1
             return response
         else:
             if http_proxy:
@@ -117,6 +122,7 @@ def ws_individual_request(config, url, attempt_id, params=None):
                                response.status_code, (config.RE_INIT_SLEEP_TIME / 60.0))
                 time.sleep(config.RE_INIT_SLEEP_TIME)
                 config.REQUEST_SLEEP += 1.0
+                config.SUCCESSFUL_CONSECUTIVE_ATTEMPTS=0
             return response
     except (SystemExit, KeyboardInterrupt):
         raise
